@@ -1,0 +1,24 @@
+# permissions for end users to edit penycrds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: penycrd-editor-role
+rules:
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds/status
+  verbs:
+  - get

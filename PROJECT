@@ -1,3 +1,7 @@
 domain: peny.k8s.com
 repo: github.com/godpeny/peny-k8s-controller
+resources:
+- group: godpeny
+  kind: PenyCrd
+  version: v1
 version: "2"

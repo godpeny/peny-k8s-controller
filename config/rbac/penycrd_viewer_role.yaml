@@ -1,0 +1,20 @@
+# permissions for end users to view penycrds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: penycrd-viewer-role
+rules:
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds/status
+  verbs:
+  - get

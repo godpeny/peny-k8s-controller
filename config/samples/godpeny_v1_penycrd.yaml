@@ -1,0 +1,7 @@
+apiVersion: godpeny.peny.k8s.com/v1
+kind: PenyCrd
+metadata:
+  name: penycrd-sample
+spec:
+  # Add fields here
+  foo: bar
