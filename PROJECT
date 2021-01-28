@@ -1,0 +1,3 @@
+domain: peny.k8s.com
+repo: github.com/godpeny/peny-k8s-controller
+version: "2"
