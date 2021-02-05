@@ -28,14 +28,17 @@ type PenyCrdSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of PenyCrd. Edit PenyCrd_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// pod count
+	Size int32 `json:"size"`
 }
 
 // PenyCrdStatus defines the observed state of PenyCrd
 type PenyCrdStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Memcached pod status
+	Nodes []string `json:"nodes"`
 }
 
 // +kubebuilder:object:root=true

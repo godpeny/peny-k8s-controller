@@ -18,13 +18,15 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	godpenyv1 "github.com/godpeny/peny-k8s-controller/api/v1"
+	// APis added
+	corev1 "k8s.io/api/core/v1"
 )
 
 // PenyCrdReconciler reconciles a PenyCrd object
@@ -38,16 +40,44 @@ type PenyCrdReconciler struct {
 // +kubebuilder:rbac:groups=godpeny.peny.k8s.com,resources=penycrds/status,verbs=get;update;patch
 
 func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("penycrd", req.NamespacedName)
+	ctx := context.Background()
+	reqLogger := r.Log.WithValues("penycrd", req.NamespacedName)
 
-	// your logic here
+	nodeList := &corev1.NodeList{}
+	err := r.Client.List(ctx, nodeList)
+	if err != nil {
+		reqLogger.Error(err, "Failed to list nodes.")
+		return ctrl.Result{}, err
+	}
+
+	nodeNames := getNodeNames(nodeList.Items)
+
+	fmt.Println("NODE")
+	fmt.Println(nodeNames)
 
 	return ctrl.Result{}, nil
 }
 
 func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&godpenyv1.PenyCrd{}).
+		For(&corev1.Node{}).
 		Complete(r)
+}
+
+// getPodNames returns the pod names of the array of pods passed in
+func getPodNames(pods []corev1.Pod) []string {
+	var podNames []string
+	for _, pod := range pods {
+		podNames = append(podNames, pod.Name)
+	}
+	return podNames
+}
+
+// getNodeNames returns the pod names of the array of pods passed in
+func getNodeNames(pods []corev1.Node) []string {
+	var podNames []string
+	for _, pod := range pods {
+		podNames = append(podNames, pod.Name)
+	}
+	return podNames
 }

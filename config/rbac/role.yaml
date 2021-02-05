@@ -1,0 +1,28 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - godpeny.peny.k8s.com
+  resources:
+  - penycrds/status
+  verbs:
+  - get
+  - patch
+  - update
