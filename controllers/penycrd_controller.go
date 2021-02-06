@@ -23,7 +23,10 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	// APis added
 	corev1 "k8s.io/api/core/v1"
@@ -59,8 +62,18 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Node{}).
+		WithEventFilter(predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				fmt.Println("UP") // Up on every update event
+
+				// Add event filter logic to reconcile
+
+				return false
+			},
+		}).
 		Complete(r)
 }
 
