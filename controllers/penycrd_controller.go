@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,17 +47,16 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	reqLogger := r.Log.WithValues("penycrd", req.NamespacedName)
 
-	nodeList := &corev1.NodeList{}
-	err := r.Client.List(ctx, nodeList)
+	node := &corev1.Node{}
+	err := r.Client.Get(ctx, req.NamespacedName, node)
 	if err != nil {
 		reqLogger.Error(err, "Failed to list nodes.")
 		return ctrl.Result{}, err
 	}
 
-	nodeNames := getNodeNames(nodeList.Items)
-
-	fmt.Println("NODE")
-	fmt.Println(nodeNames)
+	reqLogger.Info("Reconcile")
+	reqLogger.Info(req.Name)
+	fmt.Println(node.Labels)
 
 	return ctrl.Result{}, nil
 }
@@ -67,13 +67,16 @@ func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1.Node{}).
 		WithEventFilter(predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
-				fmt.Println("UP") // Up on every update event
-
+				//fmt.Println("UP") // Up on every update event
 				// Add event filter logic to reconcile
-
+				eq := reflect.DeepEqual(e.MetaOld.GetLabels(), e.MetaNew.GetLabels())
+				if !eq {
+					fmt.Println(e.MetaNew.GetName())
+					fmt.Println("Labels Updated! They're unequal.")
+					return true
+				}
 				return false
-			},
-		}).
+			}}).
 		Complete(r)
 }
 

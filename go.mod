@@ -20,7 +20,7 @@ require (
 	k8s.io/api v0.19.0-rc.3
 	k8s.io/apimachinery v0.19.0-rc.3
 	k8s.io/apiserver v0.18.4 // indirect
-	k8s.io/client-go v0.19.0-rc.3
+	k8s.io/client-go v1.5.1
 	k8s.io/cloud-provider v0.18.4
 	k8s.io/cloud-provider-openstack v1.18.0
 	k8s.io/component-base v0.18.4 // indirect
