@@ -89,6 +89,7 @@ const (
 	legacyNodeRoleBehaviorFeature = "LegacyNodeRoleBehavior"
 )
 
+var knownHostsMap map[string]*corev1.Node // node cache as map
 var knownHosts []*corev1.Node
 
 // +kubebuilder:rbac:groups=godpeny.peny.k8s.com,resources=penycrds,verbs=get;list;watch;create;update;patch;delete
@@ -102,14 +103,28 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err := r.Client.Get(ctx, req.NamespacedName, node)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// node deleted
 			fmt.Println("DELETE NODE DETECTED")
+			delete(knownHostsMap, req.Name)
+			return ctrl.Result{}, nil
 		} else {
 			reqLogger.Error(err, "Failed to get node.")
 			return ctrl.Result{}, err
 		}
 	}
 	reqLogger.Info("Reconcile")
-	r.nodeSyncLoop()
+
+	if len(knownHostsMap) == 0 {
+		knownHostsMap = make(map[string]*corev1.Node)
+	}
+
+	if _, found := knownHostsMap[node.Name]; found {
+		// label updated
+	} else {
+		// node added
+		knownHostsMap[node.Name] = node
+	}
+
 
 	return ctrl.Result{}, nil
 }
@@ -119,14 +134,14 @@ func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Node{}).
 		WithEventFilter(predicate.Funcs{
-			CreateFunc: func(e event.CreateEvent) bool { // To-Fix : sync problem
+			CreateFunc: func(e event.CreateEvent) bool {
 				fmt.Println("CREATE")
 				return true
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				// Add event filter logic to reconcile
 
-				fmt.Println(nodeNames(knownHosts))
+				fmt.Println(nodeNames(convertMapToSlice(knownHostsMap)))
 
 				ol := e.MetaOld.GetLabels()
 				nl := e.MetaNew.GetLabels()
@@ -260,4 +275,13 @@ func getNodeConditionPredicate() NodeConditionPredicate {
 		}
 		return true
 	}
+}
+
+func convertMapToSlice(m map[string]*corev1.Node) []*corev1.Node {
+	v := make([]*corev1.Node, 0, len(m))
+
+	for _, value := range m {
+		v = append(v, value)
+	}
+	return v
 }
