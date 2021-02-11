@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -46,56 +47,20 @@ type PenyCrdReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-const penyLabel = "test"
-
 const (
-	// Interval of synchronizing service status from apiserver
-	serviceSyncPeriod = 30 * time.Second
-	// Interval of synchronizing node status from apiserver
-	nodeSyncPeriod = 100 * time.Second
-
-	// How long to wait before retrying the processing of a service change.
-	// If this changes, the sleep in hack/jenkins/e2e.sh before downing a cluster
-	// should be changed appropriately.
-	minRetryDelay = 5 * time.Second
-	maxRetryDelay = 300 * time.Second
-
-	// labelNodeRoleMaster specifies that a node is a master. The use of this label within the
-	// controller is deprecated and only considered when the LegacyNodeRoleBehavior feature gate
-	// is on.
-	labelNodeRoleMaster = "node-role.kubernetes.io/master"
-
-	// labelNodeRoleExcludeBalancer specifies that the node should not be considered as a target
-	// for external load-balancers which use nodes as a second hop (e.g. many cloud LBs which only
-	// understand nodes). For services that use externalTrafficPolicy=Local, this may mean that
-	// any backends on excluded nodes are not reachable by those external load-balancers.
-	// Implementations of this exclusion may vary based on provider. This label is honored starting
-	// in 1.16 when the ServiceNodeExclusion gate is on.
-	labelNodeRoleExcludeBalancer = "node.kubernetes.io/exclude-from-external-load-balancers"
-
-	// labelAlphaNodeRoleExcludeBalancer specifies that the node should be
-	// exclude from load balancers created by a cloud provider. This label is deprecated and will
-	// be removed in 1.18.
-	labelAlphaNodeRoleExcludeBalancer = "alpha.service-controller.kubernetes.io/exclude-balancer"
-
-	// serviceNodeExclusionFeature is the feature gate name that
-	// enables nodes to exclude themselves from service load balancers
-	// originated from: https://github.com/kubernetes/kubernetes/blob/28e800245e/pkg/features/kube_features.go#L178
-	serviceNodeExclusionFeature = "ServiceNodeExclusion"
-
-	// legacyNodeRoleBehaviorFeature is the feature gate name that enables legacy
-	// behavior to vary cluster functionality on the node-role.kubernetes.io
-	// labels.
-	legacyNodeRoleBehaviorFeature = "LegacyNodeRoleBehavior"
+	penyLabel      = "test"
+	nodeSyncPeriod = 10 * time.Second
 )
 
 var knownHostsMap map[string]*corev1.Node // node cache as map
-var knownHosts []*corev1.Node
+var sync bool                             // go routine doesn't occur when sync == true
 
 // +kubebuilder:rbac:groups=godpeny.peny.k8s.com,resources=penycrds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=godpeny.peny.k8s.com,resources=penycrds/status,verbs=get;update;patch
 
 func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	sync = true
+
 	ctx := context.Background()
 	reqLogger := r.Log.WithValues("penycrd", req.NamespacedName)
 
@@ -125,11 +90,23 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		knownHostsMap[node.Name] = node
 	}
 
+	sync = false
 
 	return ctrl.Result{}, nil
 }
 
 func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	stopCh := make(chan struct{})
+
+	go wait.Until(func() {
+		select {
+		case <-mgr.Elected():
+			klog.V(4).Info("nodeSyncLoop")
+			r.nodeSyncLoop()
+		default:
+		}
+	}, nodeSyncPeriod, stopCh)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Node{}).
@@ -154,7 +131,6 @@ func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					fmt.Println(e.MetaOld.GetLabels())
 					fmt.Println(e.MetaNew.GetLabels())
 
-					//r.nodeSyncLoop()
 					return true
 				}
 				return false
@@ -176,6 +152,10 @@ func findKeyInMap(s string, m map[string]string) bool {
 }
 
 func (r *PenyCrdReconciler) nodeSyncLoop() {
+	if sync { // if in reconcilation phase , skip and try next round.
+		return
+	}
+
 	nodeList := &corev1.NodeList{}
 	err := r.Client.List(context.TODO(), nodeList)
 	if err != nil {
@@ -190,34 +170,26 @@ func (r *PenyCrdReconciler) nodeSyncLoop() {
 		return
 	}
 
-	if len(knownHosts) == 0 { // initial stage
-		fmt.Println("Cache Initial Nodes Info")
-		knownHosts = newHosts
-		return
-	}
+	knownHosts := convertMapToSlice(knownHostsMap)
 
 	if nodeSlicesEqualForLB(newHosts, knownHosts) {
 		// The set of nodes in the cluster hasn't changed, but we can retry
 		// updating any services that we failed to update last time around.
 		fmt.Println("EQUAL-NO-CHANGE")
+
+		for i, v := range newHosts {
+			fmt.Println(i, " : ", v.Status.Addresses)
+		}
+
 		return
 	}
 
 	fmt.Println(fmt.Sprintf("Detected change in list of current cluster nodes. New node set: %v", nodeNames(newHosts)))
-
-	// Try updating all services, and save the ones that fail to try again next
-	// round.
-
-	knownHosts = newHosts
+	// update cache - knownHostsMap
+	return
 }
 
 func nodeSlicesEqualForLB(x, y []*v1.Node) bool {
-
-	//fmt.Println("###")
-	//fmt.Println(nodeNames(y))
-	//fmt.Println(nodeNames(x))
-	//fmt.Println("###")
-
 	if len(x) != len(y) {
 		return false
 	}
