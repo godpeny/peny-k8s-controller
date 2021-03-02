@@ -118,18 +118,26 @@ func (r *PenyCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				// Add event filter logic to reconcile
 
-				fmt.Println(nodeNames(convertMapToSlice(knownHostsMap)))
+				//fmt.Println(nodeNames(convertMapToSlice(knownHostsMap)))
 
-				ol := e.MetaOld.GetLabels()
-				nl := e.MetaNew.GetLabels()
+				oldObj := e.ObjectOld.DeepCopyObject()
+				oldNode := convertToMyCustomResource_v1Node(oldObj)
+
+				newObj := e.ObjectNew.DeepCopyObject()
+				newNode := convertToMyCustomResource_v1Node(newObj)
+
+				ol := oldNode.GetLabels()
+				nl := newNode.GetLabels()
 				eq := reflect.DeepEqual(ol, nl)
 
 				if !eq && findKeyInMap(penyLabel, nl) {
 
-					fmt.Println(e.MetaNew.GetName())
+					fmt.Println(newNode.GetName())
 					fmt.Println("Labels Updated! They're unequal.")
-					fmt.Println(e.MetaOld.GetLabels())
-					fmt.Println(e.MetaNew.GetLabels())
+					//fmt.Println(e.MetaOld.GetLabels())
+					//fmt.Println(e.MetaNew.GetLabels())
+
+					fmt.Println(newNode.Status.Images)
 
 					return true
 				}
@@ -256,4 +264,9 @@ func convertMapToSlice(m map[string]*corev1.Node) []*corev1.Node {
 		v = append(v, value)
 	}
 	return v
+}
+
+func convertToMyCustomResource_v1Node(obj runtime.Object) *corev1.Node {
+	myobj := obj.(*corev1.Node)
+	return myobj
 }
