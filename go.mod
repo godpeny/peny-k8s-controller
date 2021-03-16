@@ -4,33 +4,21 @@ go 1.13
 
 require (
 	github.com/go-logr/logr v0.1.0
-	github.com/gophercloud/gophercloud v0.7.1-0.20200116010453-5391bb776e58
-	github.com/gophercloud/utils v0.0.0-20200508015959-b0167b94122c
-	github.com/mitchellh/mapstructure v1.1.2
+	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
-	github.com/prometheus/client_golang v1.7.1
-	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.4.0
-	github.com/stretchr/testify v1.5.1
-	golang.org/x/text v0.3.3 // indirect
-	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
-	gopkg.in/gcfg.v1 v1.2.3
-	gopkg.in/warnings.v0 v0.1.2 // indirect
+	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/stretchr/testify v1.5.1 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	google.golang.org/appengine v1.6.2 // indirect
 	k8s.io/api v0.19.0-rc.3
 	k8s.io/apimachinery v0.19.0-rc.3
-	k8s.io/apiserver v0.18.4 // indirect
 	k8s.io/client-go v1.5.1
-	k8s.io/cloud-provider v0.18.4
-	k8s.io/cloud-provider-openstack v1.18.0
-	k8s.io/component-base v0.18.4 // indirect
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.0.0
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 // indirect
-	k8s.io/kubernetes v1.18.4 // indirect
-	k8s.io/utils v0.0.0-20200720150651-0bdb4ca86cbc
+	k8s.io/utils v0.0.0-20200720150651-0bdb4ca86cbc // indirect
 	sigs.k8s.io/controller-runtime v0.6.1
-	sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06 // indirect
 )
 
 replace (
