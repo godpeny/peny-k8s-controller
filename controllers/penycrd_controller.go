@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	// APis added
+	godpenyv1 "github.com/godpeny/peny-k8s-controller/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 )
@@ -63,6 +64,10 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	ctx := context.Background()
 	reqLogger := r.Log.WithValues("penycrd", req.NamespacedName)
+
+	// in order to get cr
+	pc := godpenyv1.PenyCrd{}
+	r.Client.Get(ctx, req.NamespacedName, &pc)
 
 	node := &corev1.Node{}
 	err := r.Client.Get(ctx, req.NamespacedName, node)
