@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -274,4 +275,35 @@ func convertMapToSlice(m map[string]*corev1.Node) []*corev1.Node {
 func convertToMyCustomResource_v1Node(obj runtime.Object) *corev1.Node {
 	myobj := obj.(*corev1.Node)
 	return myobj
+}
+
+func isPartialKeyInMap(s string, m map[string]string) string {
+	for key, label := range m {
+		if strings.Contains(key, penyLabel) {
+			return label
+		}
+	}
+	return ""
+}
+
+func extractRuleNameFromMap(s string, m map[string]string) string {
+	for key, _ := range m {
+		if strings.Contains(key, penyLabel) {
+			return strings.TrimPrefix(key, penyLabel)
+
+		}
+	}
+	return ""
+}
+
+func isLabelAttachedOrDetached(ol map[string]string, nl map[string]string) string {
+	oldFlag := isPartialKeyInMap(penyLabel, ol)
+	newFlag := isPartialKeyInMap(penyLabel, nl)
+
+	if oldFlag == "" && newFlag != "" {
+		return "labelAttached"
+	} else if oldFlag != "" && newFlag == "" {
+		return "labelDetached"
+	}
+	return ""
 }
