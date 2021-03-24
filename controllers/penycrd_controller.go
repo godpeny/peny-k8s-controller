@@ -77,7 +77,7 @@ func (r *PenyCrdReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			// node deleted
 			fmt.Println("DELETE NODE DETECTED")
 			delete(knownHostsMap, req.Name)
-			return ctrl.Result{}, err
+			return ctrl.Result{}, nil
 		} else {
 			reqLogger.Error(err, "Failed to get node.")
 			return ctrl.Result{}, err
